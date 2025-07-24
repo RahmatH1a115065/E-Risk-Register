@@ -13,7 +13,7 @@
     table td, table th { padding: 8px; border: 1px solid #ccc; vertical-align: top; text-align: left; }
     label { font-weight: bold; }
     input, select, textarea { width: 100%; padding: 6px; border-radius: 5px; border: 1px solid #ccc; }
-    button { margin-top: 20px; padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button { margin: 10px 5px 0 0; padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; }
     button:hover { background-color: #2980b9; }
     .readonly { background-color: #eee; }
     canvas { max-width: 600px; margin-top: 30px; }
@@ -34,6 +34,7 @@
       <tr><td><label>Konteks Eksternal</label></td><td><textarea id="konEksternal"></textarea></td></tr>
     </table>
     <button type="button" onclick="simpanKonteks()">Simpan Konteks</button>
+    <button type="button" onclick="resetKonteks()">➕ Tambah Form</button>
   </form>
 
   <!-- FORM 2: Register Risiko -->
@@ -53,6 +54,7 @@
       <tr><td><label>Warna Risiko</label></td><td><input id="warnaRisiko" class="readonly" readonly></td></tr>
     </table>
     <button type="button" onclick="simpanRisiko()">Simpan Risiko</button>
+    <button type="button" onclick="resetRisiko()">➕ Tambah Form</button>
   </form>
 
   <!-- FORM 3: Mitigasi Risiko -->
@@ -69,188 +71,20 @@
       <tr><td><label>Level Risiko Setelah Mitigasi</label></td><td><input id="levelSetelahMitigasi"></td></tr>
     </table>
     <button type="button" onclick="simpanMitigasi()">Simpan Mitigasi</button>
+    <button type="button" onclick="resetMitigasi()">➕ Tambah Form</button>
   </form>
 
-  <!-- Ekspor & Rekap -->
   <div>
-    <button onclick="exportRisiko()" class="export-button">📤 Export Register Risiko</button>
-    <button onclick="exportMitigasi()" class="export-button">📤 Export Mitigasi Risiko</button>
+    <button onclick="exportRisiko()">📤 Export Register Risiko</button>
+    <button onclick="exportMitigasi()">📤 Export Mitigasi Risiko</button>
+    <button onclick="exportRisikoChart()">🖼️ Export Grafik Risiko</button>
+    <button onclick="exportMitigasiChart()">🖼️ Export Grafik Mitigasi</button>
+    <button onclick="exportKesimpulan()">📝 Export Kesimpulan</button>
   </div>
 
-  <h2>📊 Rekap Grafik Risiko</h2>
   <canvas id="chartRisiko"></canvas>
-
-  <h2>📊 Rekap Mitigasi Risiko</h2>
   <canvas id="chartMitigasi"></canvas>
 
-  <h2>📋 Rekap Terpadu per OPD</h2>
-  <div id="rekapContainer"></div>
-
-<script>
-// Inisialisasi array data
-const konteksData = [];
-const risikoData = [];
-const mitigasiData = [];
-
-function hitungLevelRisiko() {
-  const k = parseInt(document.getElementById('kemungkinan').value) || 0;
-  const d = parseInt(document.getElementById('dampak').value) || 0;
-  const level = k * d;
-  document.getElementById('levelRisiko').value = level;
-  let warna = '';
-  if (level >= 15) warna = '🔴 Ekstrim';
-  else if (level >= 9) warna = '🟠 Tinggi';
-  else if (level >= 4) warna = '🟡 Moderat';
-  else warna = '🟢 Rendah';
-  document.getElementById('warnaRisiko').value = warna;
-}
-
-function simpanKonteks() {
-  const data = {
-    opd: document.getElementById('konOPD').value,
-    tujuan: document.getElementById('konTujuan').value,
-    sasaran: document.getElementById('konSasaran').value,
-    isu: document.getElementById('konIsu').value,
-    internal: document.getElementById('konInternal').value,
-    eksternal: document.getElementById('konEksternal').value
-  };
-  konteksData.push(data);
-  alert("✅ Konteks OPD berhasil disimpan!");
-  tampilkanRekapOPD();
-}
-
-function simpanRisiko() {
-  const entry = {
-    opd: document.getElementById('opd').value,
-    program: document.getElementById('programKegiatan').value,
-    risiko: document.getElementById('namaRisiko').value,
-    penyebab: document.getElementById('penyebabRisiko').value,
-    dampakDetail: document.getElementById('dampakRisikoDetail').value,
-    pemilik: document.getElementById('pemilikRisiko').value,
-    pengendalian: document.getElementById('pengendalianEksisting').value,
-    level: document.getElementById('levelRisiko').value,
-    warna: document.getElementById('warnaRisiko').value
-  };
-  risikoData.push(entry);
-  updateSelectRisiko();
-  updateChartRisiko();
-  alert("✅ Risiko berhasil disimpan!");
-  tampilkanRekapOPD();
-}
-
-function simpanMitigasi() {
-  const entry = {
-    risiko: document.getElementById('mitigasiNamaRisiko').value,
-    level: document.getElementById('mitigasiLevelRisiko').value,
-    strategi: document.getElementById('strategiMitigasi').value,
-    output: document.getElementById('targetOutput').value,
-    tahapan: document.getElementById('kegiatanTahapan').value,
-    jadwal: document.getElementById('jadwalImplementasi').value,
-    penanggungJawab: document.getElementById('penanggungJawab').value,
-    levelSesudah: document.getElementById('levelSetelahMitigasi').value
-  };
-  mitigasiData.push(entry);
-  updateChartMitigasi();
-  alert("✅ Mitigasi berhasil disimpan!");
-  tampilkanRekapOPD();
-}
-
-function isiLevelMitigasi() {
-  const risiko = document.getElementById('mitigasiNamaRisiko').value;
-  const data = risikoData.find(r => r.risiko === risiko);
-  if (data) {
-    document.getElementById('mitigasiLevelRisiko').value = data.level + ' - ' + data.warna;
-  }
-}
-
-function updateSelectRisiko() {
-  const select = document.getElementById('mitigasiNamaRisiko');
-  select.innerHTML = '';
-  risikoData.forEach(r => {
-    const option = document.createElement('option');
-    option.value = r.risiko;
-    option.textContent = r.risiko;
-    select.appendChild(option);
-  });
-}
-
-function updateChartRisiko() {
-  const labels = [...new Set(risikoData.map(r => r.opd))];
-  const data = labels.map(opd => {
-    const max = Math.max(...risikoData.filter(r => r.opd === opd).map(r => parseInt(r.level)));
-    return max;
-  });
-  new Chart(document.getElementById('chartRisiko'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ label: 'Level Risiko Tertinggi', data, backgroundColor: '#e67e22' }]
-    }
-  });
-}
-
-function updateChartMitigasi() {
-  const levelLabels = ['🟢 Rendah','🟡 Moderat','🟠 Tinggi','🔴 Ekstrim'];
-  const counts = [0, 0, 0, 0];
-  mitigasiData.forEach(m => {
-    if (m.level.includes('Ekstrim')) counts[3]++;
-    else if (m.level.includes('Tinggi')) counts[2]++;
-    else if (m.level.includes('Moderat')) counts[1]++;
-    else counts[0]++;
-  });
-  new Chart(document.getElementById('chartMitigasi'), {
-    type: 'pie',
-    data: {
-      labels: levelLabels,
-      datasets: [{ data: counts, backgroundColor: ['#2ecc71','#f1c40f','#e67e22','#e74c3c'] }]
-    }
-  });
-}
-
-function tampilkanRekapOPD() {
-  const container = document.getElementById('rekapContainer');
-  container.innerHTML = '';
-  const daftarOPD = [...new Set(risikoData.map(r => r.opd))];
-  daftarOPD.forEach(opd => {
-    const konteks = konteksData.find(k => k.opd === opd);
-    const risikoList = risikoData.filter(r => r.opd === opd);
-    const mitigasiList = mitigasiData.filter(m => risikoList.some(r => r.risiko === m.risiko));
-    let html = `<h3>🏢 ${opd}</h3>`;
-    if (konteks) {
-      html += `<p><strong>Tujuan:</strong> ${konteks.tujuan}<br>
-        <strong>Sasaran:</strong> ${konteks.sasaran}<br>
-        <strong>Isu Strategis:</strong> ${konteks.isu}<br>
-        <strong>Internal:</strong> ${konteks.internal}<br>
-        <strong>Eksternal:</strong> ${konteks.eksternal}</p>`;
-    }
-    html += `<ul><strong>Risiko:</strong>`;
-    risikoList.forEach(r => {
-      html += `<li>${r.risiko} (${r.level} - ${r.warna})<br>
-        <em>Program: ${r.program}, Penyebab: ${r.penyebab}, Dampak: ${r.dampakDetail}</em></li>`;
-    });
-    html += `</ul><ul><strong>Mitigasi:</strong>`;
-    mitigasiList.forEach(m => {
-      html += `<li>${m.risiko} ➜ ${m.strategi} (${m.level} ➔ ${m.levelSesudah})<br>
-        Output: ${m.output}, Tahapan: ${m.tahapan}, Jadwal: ${m.jadwal}, PJ: ${m.penanggungJawab}</li>`;
-    });
-    html += `</ul><hr>`;
-    container.innerHTML += html;
-  });
-}
-
-function exportRisiko() {
-  const ws = XLSX.utils.json_to_sheet(risikoData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Register Risiko");
-  XLSX.writeFile(wb, "register_risiko.xlsx");
-}
-
-function exportMitigasi() {
-  const ws = XLSX.utils.json_to_sheet(mitigasiData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Mitigasi Risiko");
-  XLSX.writeFile(wb, "mitigasi_risiko.xlsx");
-}
-</script>
+  <script src="fungsi.js"></script>
 </body>
 </html>
